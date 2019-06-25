@@ -3,18 +3,20 @@ const express = require("express");
 const server = express();
 
 const projects = [];
-var reqCount = 0;
+let reqCount = 0;
 
 server.use(express.json());
 
 function CheckIdExists(req, res, next) {
-  let IdExist = false;
+  const { id } = req.params;
 
-  projects.map(project => {
-    project.id == req.params.id ? (IdExist = true) : null;
-  });
+  const project = projects.find(p => p.id === parseInt(id));
 
-  IdExist ? next() : res.sendStatus(400);
+  if (!project) {
+    return res.status(400).json({ error: "Project not found" });
+  }
+
+  return next();
 }
 
 server.use((req, res, next) => {
@@ -29,45 +31,49 @@ server.get("/projects", (req, res) => {
 });
 
 server.post("/projects", (req, res) => {
-  const { id, name } = req.body;
+  const { id, title } = req.body;
 
-  projects.push({ id: id, name: name, tasks: [] });
+  const project = {
+    id,
+    title,
+    tasks: []
+  };
 
-  res.send();
+  projects.push(project);
+
+  res.send(project);
 });
 
 server.put("/projects/:id", CheckIdExists, (req, res) => {
-  const { name } = req.body;
+  const { id } = req.params;
+  const { title } = req.body;
 
-  projects.map(project => {
-    if (project.id == req.params.id) {
-      project.name = name;
-    }
-  });
+  const project = projects.find(p => p.id === parseInt(id));
 
-  return res.send();
+  project.title = title;
+
+  return res.send(project);
 });
 
 server.delete("/projects/:id", CheckIdExists, (req, res) => {
-  projects.map((project, index) => {
-    if (project.id == req.params.id) {
-      projects.splice(index, 1);
-    }
-  });
+  const { id } = req.params;
+
+  const index = projects.findIndex(p => p.id === parseInt(id));
+
+  projects.splice(index, 1);
 
   return res.send();
 });
 
-server.post("projects/:id/tasks", CheckIdExists, (req, res) => {
+server.post("/projects/:id/tasks", CheckIdExists, (req, res) => {
+  const { id } = req.params;
   const { title } = req.body;
 
-  projects.map(project => {
-    if (project.id == req.params.id) {
-      project.tasks.push(title);
-    }
-  });
+  const project = projects.find(p => p.id === parseInt(id));
 
-  return res.send();
+  project.tasks.push(title);
+
+  return res.send(project);
 });
 
 server.listen(3000);
